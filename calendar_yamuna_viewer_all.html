@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ヤムナサークル多摩 — レッスンカレンダー</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --hdr: #6B7280; --blue: #4472C4; --blue-lt: #EEF4FB;
+  --border: #E5E7EB; --bg: #F3F4F6; --text: #1F2937;
+  --muted: #9CA3AF; --sat: #7A8A9A; --sun: #B05A40;
+  --kyuko-bg: #FEE2E2; --kyuko-text: #9B2335;
+}
+body { font-family: 'Noto Sans JP', sans-serif; font-weight: 300; background: var(--bg); color: var(--text); min-height: 100vh; }
+.site-header { background: var(--hdr); color: #fff; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.studio { font-family: 'Poppins', sans-serif; font-weight: 300; font-size: 13px; letter-spacing: 1px; }
+.nav-month { display: flex; align-items: center; gap: 12px; }
+.nav-btn { background: rgba(255,255,255,0.2); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+.nav-btn:hover { background: rgba(255,255,255,0.35); }
+.current-month { font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 400; letter-spacing: 2px; min-width: 120px; text-align: center; }
+.status-bar { background: #fff; border-bottom: 1px solid var(--border); padding: 5px 20px; font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: #D1D5DB; flex-shrink: 0; }
+.status-dot.ok { background: #10B981; }
+.status-dot.error { background: #EF4444; }
+.status-dot.loading { background: #F59E0B; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.main { max-width: 900px; margin: 0 auto; padding: 16px 12px 40px; }
+.pc-cal { display: none; }
+@media (min-width: 640px) { .pc-cal { display: block; } .sp-cal { display: none; } }
+.cal-grid-wrap { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.07); }
+.dow-row { display: grid; grid-template-columns: repeat(7,1fr); border-bottom: 1px solid var(--border); }
+.dow { text-align: center; font-size: 11px; font-family: 'Poppins', sans-serif; font-weight: 500; color: var(--muted); padding: 8px 0; letter-spacing: 1px; }
+.dow.sat { color: var(--sat); } .dow.sun { color: var(--sun); }
+.days-grid { display: grid; grid-template-columns: repeat(7,1fr); }
+.day-cell { border-right: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border); min-height: 90px; padding: 5px 4px; }
+.day-cell:nth-child(7n) { border-right: none; }
+.day-cell.empty { background: #FAFAFA; }
+.day-num { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 400; color: var(--text); margin-bottom: 3px; padding: 0 2px; }
+.day-num.sat { color: var(--sat); } .day-num.sun { color: var(--sun); }
+.day-num.today { background: var(--blue); color: #fff; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+.lesson-slot { margin-bottom: 2px; border-radius: 3px; padding: 1px 4px; font-size: 9.5px; line-height: 1.4; }
+.lesson-slot.normal { background: var(--blue-lt); color: var(--blue); }
+.lesson-slot.kyuko { background: var(--kyuko-bg); color: var(--kyuko-text); font-weight: 500; text-align: center; }
+.lesson-time { font-size: 8.5px; color: var(--muted); margin-right: 2px; font-family: 'Poppins', sans-serif; }
+.legend-wrap { margin-top: 10px; background: #fff; border-radius: 10px; padding: 10px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.legend-title { font-size: 10px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
+.legend-items { display: flex; flex-wrap: wrap; gap: 5px 14px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text); }
+.legend-badge { font-size: 9px; background: var(--blue-lt); color: var(--blue); border-radius: 2px; padding: 1px 5px; }
+.sp-cal { display: block; }
+@media (min-width: 640px) { .sp-cal { display: none; } }
+.sp-week { background: #fff; border-radius: 10px; overflow: hidden; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.sp-week-label { background: var(--bg); font-size: 10px; color: var(--muted); padding: 4px 12px; font-weight: 500; letter-spacing: 1px; border-bottom: 0.5px solid var(--border); }
+.sp-days { display: grid; grid-template-columns: repeat(7,1fr); }
+.sp-day { border-right: 0.5px solid var(--border); min-height: 80px; padding: 3px; }
+.sp-day:last-child { border-right: none; }
+.sp-day.empty { background: #FAFAFA; }
+.sp-day-num { font-family: 'Poppins', sans-serif; font-size: 10px; font-weight: 500; text-align: center; color: var(--text); padding: 3px 0; border-bottom: 0.5px solid var(--border); margin-bottom: 2px; }
+.sp-day-num.sat { color: var(--sat); } .sp-day-num.sun { color: var(--sun); } .sp-day-num.today { color: var(--blue); }
+.sp-slot { font-size: 7px; border-radius: 2px; padding: 1px 2px; margin-bottom: 2px; line-height: 1.3; }
+.sp-slot.normal { background: var(--blue-lt); color: var(--blue); }
+.sp-slot.kyuko { background: var(--kyuko-bg); color: var(--kyuko-text); font-weight: 500; text-align: center; }
+.sp-slot-time { font-size: 6.5px; color: var(--muted); display: block; font-family: 'Poppins', sans-serif; }
+.sp-slot-name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.page-footer { text-align: center; font-size: 11px; color: var(--muted); padding: 16px 0 8px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <span class="studio">ヤムナサークル多摩</span>
+  <div class="nav-month">
+    <button class="nav-btn" onclick="changeMonth(-1)">&#8249;</button>
+    <span class="current-month" id="current-month"></span>
+    <button class="nav-btn" onclick="changeMonth(1)">&#8250;</button>
+  </div>
+</header>
+
+<div class="status-bar">
+  <span class="status-dot" id="status-dot"></span>
+  <span id="status-text">読込中...</span>
+</div>
+
+<div class="main">
+  <div class="pc-cal">
+    <div class="cal-grid-wrap">
+      <div class="dow-row">
+        <div class="dow">月</div><div class="dow">火</div><div class="dow">水</div>
+        <div class="dow">木</div><div class="dow">金</div>
+        <div class="dow sat">土</div><div class="dow sun">日</div>
+      </div>
+      <div class="days-grid" id="pc-grid"></div>
+    </div>
+    <div class="legend-wrap" id="pc-legend" style="display:none">
+      <div class="legend-title">凡例</div>
+      <div class="legend-items" id="pc-legend-items"></div>
+    </div>
+  </div>
+  <div class="sp-cal" id="sp-cal"></div>
+  <div class="page-footer">ヤムナサークル多摩</div>
+</div>
+
+<script>
+// ★ Google SheetsのCSV URLをここに貼り付けてください
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSN3RIgRWsmyZpwGUYkpE1gg62n0NRcAsrMCwexkX44oDVtALMyEzREJb51zGXtUQ/pub?output=csv';
+
+const EXCLUDE_PRIVATE = false;
+const PRIVATE_LESSON = 'プライベート';
+const LEGEND_MAP = { 'Y': 'ヤムナボディローリング', 'P': 'ピラティス' };
+const MONTHS_JP = ['','1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const today = new Date();
+let currentYear = today.getFullYear();
+let currentMonth = today.getMonth() + 1;
+let allData = [];
+
+function setStatus(type, msg) {
+  const dot = document.getElementById('status-dot');
+  dot.className = 'status-dot' + (type==='ok'?' ok':type==='error'?' error':type==='loading'?' loading':'');
+  document.getElementById('status-text').textContent = msg;
+}
+
+async function fetchData() {
+  if (!SHEET_URL) { setStatus('error', 'SHEET_URLが設定されていません（HTMLを編集してURLを設定してください）'); return; }
+  setStatus('loading', 'データを取得中...');
+  try {
+    const res = await fetch(SHEET_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    const start = (lines[0]?.includes('日付') || lines[0]?.toLowerCase().includes('date')) ? 1 : 0;
+    allData = lines.slice(start).map(line => {
+      const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g,''));
+      return { date: cols[0]||'', time: cols[1]||'', lesson: cols[2]||'' };
+    }).filter(r => r.date && r.lesson);
+    if (EXCLUDE_PRIVATE) allData = allData.filter(r => r.lesson !== PRIVATE_LESSON);
+    setStatus('ok', '最終更新：' + new Date().toLocaleString('ja-JP') + '　（' + allData.length + '件）');
+    buildCalendar();
+  } catch(e) {
+    setStatus('error', 'データ取得エラー：' + e.message);
+  }
+}
+
+function getSlotsForDay(y, m, d) {
+  const strs = [y+'/'+m+'/'+d, y+'/'+String(m).padStart(2,'0')+'/'+String(d).padStart(2,'0'), y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0')];
+  return allData.filter(r => strs.includes(r.date)).sort((a,b) => a.time.localeCompare(b.time));
+}
+
+function buildCalendar() {
+  const y = currentYear, m = currentMonth;
+  document.getElementById('current-month').textContent = y + '年' + MONTHS_JP[m];
+  const first = new Date(y,m-1,1), last = new Date(y,m,0).getDate();
+  const startOffset = (first.getDay()+6)%7;
+  buildPC(y,m,last,startOffset); buildSP(y,m,last,startOffset); buildLegend();
+}
+
+function buildPC(y,m,last,startOffset) {
+  const totalCells = Math.ceil((startOffset+last)/7)*7;
+  const grid = document.getElementById('pc-grid'); grid.innerHTML='';
+  for(let i=0;i<totalCells;i++) {
+    const d=i-startOffset+1, dow=i%7;
+    const cell=document.createElement('div');
+    if(d<1||d>last){cell.className='day-cell empty';grid.appendChild(cell);continue;}
+    const slots=getSlotsForDay(y,m,d);
+    const isKyuko=slots.length===1&&slots[0].lesson==='休講';
+    const isToday=y===today.getFullYear()&&m===today.getMonth()+1&&d===today.getDate();
+    cell.className='day-cell';
+    const nd=document.createElement('div');
+    nd.className='day-num'+(dow===5?' sat':dow===6?' sun':'')+(isToday?' today':'');
+    nd.textContent=d; cell.appendChild(nd);
+    if(isKyuko){const s=document.createElement('div');s.className='lesson-slot kyuko';s.textContent='休講';cell.appendChild(s);}
+    else slots.forEach(s=>{const el=document.createElement('div');el.className='lesson-slot normal';el.innerHTML='<span class="lesson-time">'+s.time+'</span>'+s.lesson;cell.appendChild(el);});
+    grid.appendChild(cell);
+  }
+}
+
+function buildSP(y,m,last,startOffset) {
+  const wrap=document.getElementById('sp-cal'); wrap.innerHTML='';
+  const totalWeeks=Math.ceil((startOffset+last)/7);
+  for(let w=0;w<totalWeeks;w++) {
+    const wd=document.createElement('div'); wd.className='sp-week';
+    const lb=document.createElement('div'); lb.className='sp-week-label'; lb.textContent='第'+(w+1)+'週'; wd.appendChild(lb);
+    const dd=document.createElement('div'); dd.className='sp-days';
+    for(let dow=0;dow<7;dow++) {
+      const i=w*7+dow, d=i-startOffset+1;
+      const dy=document.createElement('div');
+      if(d<1||d>last){dy.className='sp-day empty';dd.appendChild(dy);continue;}
+      const slots=getSlotsForDay(y,m,d);
+      const isKyuko=slots.length===1&&slots[0].lesson==='休講';
+      const isToday=y===today.getFullYear()&&m===today.getMonth()+1&&d===today.getDate();
+      dy.className='sp-day';
+      const nd=document.createElement('div');
+      nd.className='sp-day-num'+(dow===5?' sat':dow===6?' sun':'')+(isToday?' today':'');
+      nd.textContent=d; dy.appendChild(nd);
+      if(isKyuko){const s=document.createElement('div');s.className='sp-slot kyuko';s.textContent='休講';dy.appendChild(s);}
+      else slots.forEach(s=>{const el=document.createElement('div');el.className='sp-slot normal';const t=document.createElement('span');t.className='sp-slot-time';t.textContent=s.time;const n=document.createElement('span');n.className='sp-slot-name';n.textContent=s.lesson;el.appendChild(t);el.appendChild(n);dy.appendChild(el);});
+      dd.appendChild(dy);
+    }
+    wd.appendChild(dd); wrap.appendChild(wd);
+  }
+}
+
+function buildLegend() {
+  const entries=Object.entries(LEGEND_MAP);
+  const wrap=document.getElementById('pc-legend'), items=document.getElementById('pc-legend-items');
+  if(!entries.length){wrap.style.display='none';return;}
+  items.innerHTML='';
+  entries.forEach(([abbr,full])=>{const el=document.createElement('div');el.className='legend-item';el.innerHTML='<span class="legend-badge">'+abbr+'</span>'+full;items.appendChild(el);});
+  wrap.style.display='';
+}
+
+function changeMonth(delta) {
+  currentMonth+=delta;
+  if(currentMonth>12){currentMonth=1;currentYear++;}
+  if(currentMonth<1){currentMonth=12;currentYear--;}
+  buildCalendar();
+}
+
+document.getElementById('current-month').textContent = currentYear+'年'+MONTHS_JP[currentMonth];
+buildCalendar();
+fetchData();
+</script>
+</body>
+</html>
